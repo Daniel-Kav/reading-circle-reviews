@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { BookOpen, Sparkles, Eye, EyeOff } from "lucide-react";
 import { Link } from "react-router-dom";
+import { supabase } from '@/integrations/supabase/client';
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -20,14 +20,26 @@ const Login = () => {
     setError("");
     setIsLoading(true);
 
-    // TODO: Implement authentication with Supabase
-    console.log("Login attempt:", { email, password });
-    
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (signInError) {
+        setError(signInError.message);
+        setIsLoading(false);
+        return;
+      }
+      if (data?.session?.access_token) {
+        localStorage.setItem('access_token', data.session.access_token);
+      }
       setIsLoading(false);
-      setError("Authentication not yet implemented. Please connect to Supabase first.");
-    }, 1000);
+      // Optionally redirect or show success
+      // window.location.href = '/browse';
+    } catch (err) {
+      setError((err as Error).message);
+      setIsLoading(false);
+    }
   };
 
   return (

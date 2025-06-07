@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { BookOpen, Sparkles, Eye, EyeOff, Check } from "lucide-react";
 import { Link } from "react-router-dom";
+import { supabase } from '@/integrations/supabase/client';
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -64,18 +64,37 @@ const Signup = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    
+
     if (!validateForm()) return;
-    
+
     setIsLoading(true);
 
-    // TODO: Implement authentication with Supabase
-    console.log("Signup attempt:", formData);
-    
-    setTimeout(() => {
+    try {
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+          },
+        },
+      });
+      if (signUpError) {
+        setError(signUpError.message);
+        setIsLoading(false);
+        return;
+      }
+      if (data?.session?.access_token) {
+        localStorage.setItem('access_token', data.session.access_token);
+      }
+      // Optionally redirect or show success
       setIsLoading(false);
-      setError("Authentication not yet implemented. Please connect to Supabase first.");
-    }, 1000);
+      // window.location.href = '/browse';
+    } catch (err) {
+      setError((err as Error).message);
+      setIsLoading(false);
+    }
   };
 
   return (

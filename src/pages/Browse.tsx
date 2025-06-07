@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,53 +10,38 @@ const Browse = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTag, setSelectedTag] = useState("");
   const [minRating, setMinRating] = useState(0);
+  const [books, setBooks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  // Sample data - this would come from your database
-  const sampleBooks = [
-    {
-      id: 1,
-      title: "The Silent Patient",
-      author: "Alex Michaelides",
-      coverUrl: "/placeholder.svg",
-      avgRating: 4.2,
-      reviewCount: 15,
-      tags: ["thriller", "psychology", "mystery"],
-      recentReviews: [
-        { user: "Jane Smith", rating: 5, text: "Absolutely gripping psychological thriller..." },
-        { user: "Mike Davis", rating: 4, text: "Great plot twist at the end..." }
-      ]
-    },
-    {
-      id: 2,
-      title: "Atomic Habits",
-      author: "James Clear",
-      coverUrl: "/placeholder.svg",
-      avgRating: 4.6,
-      reviewCount: 23,
-      tags: ["self-help", "productivity", "habits"],
-      recentReviews: [
-        { user: "Alice Johnson", rating: 5, text: "Life-changing book about building better habits..." },
-        { user: "Bob Wilson", rating: 4, text: "Practical advice that actually works..." }
-      ]
-    },
-    {
-      id: 3,
-      title: "The Seven Husbands of Evelyn Hugo",
-      author: "Taylor Jenkins Reid",
-      coverUrl: "/placeholder.svg",
-      avgRating: 4.8,
-      reviewCount: 31,
-      tags: ["fiction", "romance", "hollywood"],
-      recentReviews: [
-        { user: "Sarah Brown", rating: 5, text: "Couldn't put this book down!" },
-        { user: "Tom Green", rating: 5, text: "Beautifully written story..." }
-      ]
-    }
-  ];
+  useEffect(() => {
+    const fetchBooks = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        let url = "http://localhost:3000/books";
+        if (searchTerm) {
+          url += `?search=${encodeURIComponent(searchTerm)}`;
+        }
+        const accessToken = localStorage.getItem('access_token');
+        const response = await fetch(url, {
+          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+        });
+        if (!response.ok) throw new Error("Failed to fetch books");
+        const data = await response.json();
+        setBooks(data);
+      } catch (err) {
+        setError((err as Error).message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBooks();
+  }, [searchTerm]);
 
   const allTags = ["thriller", "psychology", "mystery", "self-help", "productivity", "habits", "fiction", "romance", "hollywood"];
 
-  const filteredBooks = sampleBooks.filter(book => {
+  const filteredBooks = books.filter(book => {
     const matchesSearch = book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          book.author.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesTag = !selectedTag || book.tags.includes(selectedTag);
