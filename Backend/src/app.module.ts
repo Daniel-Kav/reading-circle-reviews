@@ -31,12 +31,13 @@ import { Membership } from './membership/entities/membership.entity';
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
+
       useFactory: async (configService: ConfigService) => ({
         type: 'postgres',
         url: configService.getOrThrow<string>('DATABASE_URL'),
         entities: [User, Book, Review, Tag, BookTag, ReviewLike, PersonalLibrary, Club, Membership],
         autoLoadEntities: true,
-        synchronize: false, // Set to false for production
+        synchronize: true, // Set to false for production
         ssl: true,
       }),
       inject: [ConfigService],
