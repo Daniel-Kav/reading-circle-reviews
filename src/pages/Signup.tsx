@@ -1,12 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { BookOpen, Sparkles, Eye, EyeOff, Check } from "lucide-react";
-import { Link } from "react-router-dom";
-import { supabase } from '@/integrations/supabase/client';
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -20,6 +20,16 @@ const Signup = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  const { signUp, user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!loading && user) {
+      navigate('/browse');
+    }
+  }, [user, loading, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -58,6 +68,11 @@ const Signup = () => {
       return false;
     }
     
+    if (!formData.firstName.trim() || !formData.lastName.trim()) {
+      setError("Please enter your first and last name");
+      return false;
+    }
+    
     return true;
   };
 
@@ -69,33 +84,29 @@ const Signup = () => {
 
     setIsLoading(true);
 
-    try {
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-          },
-        },
-      });
-      if (signUpError) {
-        setError(signUpError.message);
-        setIsLoading(false);
-        return;
-      }
-      if (data?.session?.access_token) {
-        localStorage.setItem('access_token', data.session.access_token);
-      }
-      // Optionally redirect or show success
-      setIsLoading(false);
-      // window.location.href = '/browse';
-    } catch (err) {
-      setError((err as Error).message);
-      setIsLoading(false);
+    const { error: signUpError } = await signUp(
+      formData.email, 
+      formData.password, 
+      formData.firstName, 
+      formData.lastName
+    );
+    
+    if (signUpError) {
+      setError(signUpError);
+    } else {
+      navigate('/browse');
     }
+    
+    setIsLoading(false);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 relative overflow-hidden">
