@@ -9,6 +9,78 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      book_tags: {
+        Row: {
+          book_id: string
+          tag_id: string
+        }
+        Insert: {
+          book_id: string
+          tag_id: string
+        }
+        Update: {
+          book_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_tags_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "book_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      books: {
+        Row: {
+          author: string
+          cover_image_url: string | null
+          created_at: string
+          description: string | null
+          genre: string | null
+          id: string
+          isbn: string | null
+          page_count: number | null
+          published_date: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author: string
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          genre?: string | null
+          id?: string
+          isbn?: string | null
+          page_count?: number | null
+          published_date?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author?: string
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          genre?: string | null
+          id?: string
+          isbn?: string | null
+          page_count?: number | null
+          published_date?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       chat_history: {
         Row: {
           answer: string
@@ -30,6 +102,39 @@ export type Database = {
           id?: string
           question?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      clubs: {
+        Row: {
+          cover_image_url: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          is_private: boolean | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          cover_image_url?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          is_private?: boolean | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          cover_image_url?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_private?: boolean | null
+          name?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -104,9 +209,82 @@ export type Database = {
           },
         ]
       }
+      memberships: {
+        Row: {
+          club_id: string
+          id: string
+          joined_at: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          club_id: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          club_id?: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memberships_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      personal_library: {
+        Row: {
+          added_at: string
+          book_id: string
+          finished_reading_at: string | null
+          id: string
+          started_reading_at: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          added_at?: string
+          book_id: string
+          finished_reading_at?: string | null
+          id?: string
+          started_reading_at?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          added_at?: string
+          book_id?: string
+          finished_reading_at?: string | null
+          id?: string
+          started_reading_at?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "personal_library_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
+          avatar_url: string | null
+          bio: string | null
           created_at: string | null
+          favorite_genres: string[] | null
           full_name: string | null
           id: string
           organization: string | null
@@ -114,7 +292,10 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          avatar_url?: string | null
+          bio?: string | null
           created_at?: string | null
+          favorite_genres?: string[] | null
           full_name?: string | null
           id: string
           organization?: string | null
@@ -122,7 +303,10 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          avatar_url?: string | null
+          bio?: string | null
           created_at?: string | null
+          favorite_genres?: string[] | null
           full_name?: string | null
           id?: string
           organization?: string | null
@@ -130,6 +314,73 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      review_likes: {
+        Row: {
+          created_at: string
+          id: string
+          review_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          review_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          review_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_likes_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "reviews"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reviews: {
+        Row: {
+          book_id: string
+          created_at: string
+          id: string
+          rating: number
+          review_text: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          book_id: string
+          created_at?: string
+          id?: string
+          rating: number
+          review_text?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          book_id?: string
+          created_at?: string
+          id?: string
+          rating?: number
+          review_text?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       scans: {
         Row: {
@@ -179,6 +430,27 @@ export type Database = {
           video_thumbnails?: string[] | null
           video_titles?: string[] | null
           video_urls?: string[] | null
+        }
+        Relationships: []
+      }
+      tags: {
+        Row: {
+          color: string | null
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name?: string
         }
         Relationships: []
       }

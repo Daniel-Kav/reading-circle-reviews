@@ -1,26 +1,93 @@
-import { Injectable } from '@nestjs/common';
+
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { CreateClubDto } from './dto/create-club.dto';
 import { UpdateClubDto } from './dto/update-club.dto';
+import { Club } from './entities/club.entity';
+import { Membership, MembershipRole } from '../membership/entities/membership.entity';
 
 @Injectable()
 export class ClubService {
-  create(createClubDto: CreateClubDto) {
-    return 'This action adds a new club';
+  constructor(
+    @InjectRepository(Club)
+    private clubRepository: Repository<Club>,
+    @InjectRepository(Membership)
+    private membershipRepository: Repository<Membership>,
+  ) {}
+
+  async create(createClubDto: CreateClubDto, userId: string): Promise<Club> {
+    const club = this.clubRepository.create({
+      ...createClubDto,
+      created_by: userId,
+    });
+    
+    const savedClub = await this.clubRepository.save(club);
+    
+    // Automatically add creator as admin
+    const membership = this.membershipRepository.create({
+      user_id: userId,
+      club_id: savedClub.id,
+      role: MembershipRole.ADMIN,
+    });
+    
+    await this.membershipRepository.save(membership);
+    
+    return this.findOne(savedClub.id);
   }
 
-  findAll() {
-    return `This action returns all club`;
+  async findAll(): Promise<Club[]> {
+    return this.clubRepository.find({
+      relations: ['created_by_user', 'memberships', 'memberships.user'],
+      where: { is_private: false },
+      order: { created_at: 'DESC' }
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} club`;
+  async findOne(id: string): Promise<Club> {
+    const club = await this.clubRepository.findOne({
+      where: { id },
+      relations: ['created_by_user', 'memberships', 'memberships.user']
+    });
+    
+    if (!club) {
+      throw new NotFoundException(`Club with ID ${id} not found`);
+    }
+    
+    return club;
   }
 
-  update(id: number, updateClubDto: UpdateClubDto) {
-    return `This action updates a #${id} club`;
+  async update(id: string, updateClubDto: UpdateClubDto, userId: string): Promise<Club> {
+    const club = await this.findOne(id);
+    
+    if (club.created_by !== userId) {
+      throw new ForbiddenException('Only club creators can update the club');
+    }
+    
+    await this.clubRepository.update(id, updateClubDto);
+    return this.findOne(id);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} club`;
+  async remove(id: string, userId: string): Promise<void> {
+    const club = await this.findOne(id);
+    
+    if (club.created_by !== userId) {
+      throw new ForbiddenException('Only club creators can delete the club');
+    }
+    
+    const result = await this.clubRepository.delete(id);
+    if (result.affected === 0) {
+      throw new NotFoundException(`Club with ID ${id} not found`);
+    }
+  }
+
+  async getUserClubs(userId: string): Promise<Club[]> {
+    return this.clubRepository
+      .createQueryBuilder('club')
+      .leftJoinAndSelect('club.memberships', 'membership')
+      .leftJoinAndSelect('club.created_by_user', 'creator')
+      .where('membership.user_id = :userId OR club.created_by = :userId', { userId })
+      .orderBy('club.created_at', 'DESC')
+      .getMany();
   }
 }
