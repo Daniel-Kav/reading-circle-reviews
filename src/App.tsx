@@ -10,6 +10,8 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Browse from "./pages/Browse";
 import Profile from "./pages/Profile";
+import Library from "./pages/Library";
+import Clubs from "./pages/Clubs";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +29,8 @@ const App = () => (
             <Route path="/signup" element={<Signup />} />
             <Route path="/browse" element={<Browse />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/library" element={<Library />} />
+            <Route path="/clubs" element={<Clubs />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
