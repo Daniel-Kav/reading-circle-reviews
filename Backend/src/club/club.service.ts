@@ -85,6 +85,7 @@ export class ClubService {
     return this.clubRepository
       .createQueryBuilder('club')
       .leftJoinAndSelect('club.memberships', 'membership')
+      .leftJoinAndSelect('membership.user', 'user')
       .leftJoinAndSelect('club.created_by_user', 'creator')
       .where('membership.user_id = :userId OR club.created_by = :userId', { userId })
       .orderBy('club.created_at', 'DESC')

@@ -1,10 +1,13 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookOpen, Star, User, Search, Sparkles, Heart, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import Navbar from "@/components/Navbar";
 
 const Home = () => {
+  const { user } = useAuth();
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 overflow-hidden">
       {/* Animated background elements */}
@@ -15,34 +18,8 @@ const Home = () => {
         <div className="absolute bottom-40 right-1/3 w-20 h-20 bg-pink-200 rounded-full opacity-20 animate-bounce delay-1000"></div>
       </div>
 
-      {/* Header */}
-      <header className="relative bg-white/80 backdrop-blur-md shadow-lg border-b border-white/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center group">
-              <div className="relative">
-                <BookOpen className="h-8 w-8 text-indigo-600 group-hover:text-purple-600 transition-all duration-300 group-hover:scale-110" />
-                <Sparkles className="h-4 w-4 text-yellow-400 absolute -top-1 -right-1 animate-ping" />
-              </div>
-              <h1 className="ml-2 text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                BookClub
-              </h1>
-            </div>
-            <div className="flex space-x-4">
-              <Link to="/login">
-                <Button variant="outline" className="hover:scale-105 transition-transform duration-200 border-indigo-200 hover:border-indigo-400">
-                  Login
-                </Button>
-              </Link>
-              <Link to="/signup">
-                <Button className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 hover:scale-105 transition-all duration-200 shadow-lg">
-                  Sign Up
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
+      {/* Header with Navbar */}
+      <Navbar />
 
       {/* Hero Section */}
       <main className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
@@ -61,18 +38,29 @@ const Home = () => {
           </div>
           
           <div className="mt-12 flex items-center justify-center gap-x-6 animate-fade-in delay-400">
-            <Link to="/signup">
-              <Button size="lg" className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-lg px-8 py-4 rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
-                <Sparkles className="mr-2 h-5 w-5" />
-                Start Your Journey
-              </Button>
-            </Link>
-            <Link to="/browse">
-              <Button variant="outline" size="lg" className="text-lg px-8 py-4 rounded-xl border-2 border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50 transition-all duration-300 hover:scale-105">
-                <Search className="mr-2 h-5 w-5" />
-                Explore Books
-              </Button>
-            </Link>
+            {user ? (
+              <Link to="/browse">
+                <Button size="lg" className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-lg px-8 py-4 rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+                  <Sparkles className="mr-2 h-5 w-5" />
+                  Continue Reading
+                </Button>
+              </Link>
+            ) : (
+              <>
+                <Link to="/signup">
+                  <Button size="lg" className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-lg px-8 py-4 rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+                    <Sparkles className="mr-2 h-5 w-5" />
+                    Start Your Journey
+                  </Button>
+                </Link>
+                <Link to="/browse">
+                  <Button variant="outline" size="lg" className="text-lg px-8 py-4 rounded-xl border-2 border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50 transition-all duration-300 hover:scale-105">
+                    <Search className="mr-2 h-5 w-5" />
+                    Explore Books
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
 
@@ -132,7 +120,6 @@ const Home = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Enhanced sample reviews */}
             <Card className="group hover:scale-105 transition-all duration-300 border-0 shadow-lg hover:shadow-2xl bg-gradient-to-br from-white to-blue-50 overflow-hidden">
               <CardHeader>
                 <div className="flex items-center space-x-3">

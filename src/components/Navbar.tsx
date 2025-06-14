@@ -66,7 +66,7 @@ const Navbar = () => {
                   <Button variant="ghost" className="flex items-center space-x-2">
                     <User className="h-5 w-5" />
                     <span className="hidden sm:inline">
-                      {user.user_metadata?.firstName || user.email}
+                      {user.full_name || user.email}
                     </span>
                   </Button>
                 </DropdownMenuTrigger>

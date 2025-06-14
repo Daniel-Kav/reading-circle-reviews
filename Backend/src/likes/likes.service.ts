@@ -1,26 +1,91 @@
-import { Injectable } from '@nestjs/common';
+
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { ReviewLike } from './entities/like.entity';
 import { CreateLikeDto } from './dto/create-like.dto';
-import { UpdateLikeDto } from './dto/update-like.dto';
 
 @Injectable()
 export class LikesService {
-  create(createLikeDto: CreateLikeDto) {
-    return 'This action adds a new like';
+  constructor(
+    @InjectRepository(ReviewLike)
+    private reviewLikeRepository: Repository<ReviewLike>,
+  ) {}
+
+  async create(createLikeDto: CreateLikeDto, userId: string): Promise<ReviewLike> {
+    const { review_id } = createLikeDto;
+    
+    // Check if user already liked this review
+    const existingLike = await this.reviewLikeRepository.findOne({
+      where: { user_id: userId, review_id },
+    });
+    
+    if (existingLike) {
+      throw new ConflictException('User has already liked this review');
+    }
+    
+    const like = this.reviewLikeRepository.create({
+      user_id: userId,
+      review_id,
+    });
+    
+    return this.reviewLikeRepository.save(like);
   }
 
-  findAll() {
-    return `This action returns all likes`;
+  async findAll(): Promise<ReviewLike[]> {
+    return this.reviewLikeRepository.find({
+      relations: ['user', 'review'],
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} like`;
+  async findOne(id: string): Promise<ReviewLike> {
+    const like = await this.reviewLikeRepository.findOne({
+      where: { id },
+      relations: ['user', 'review'],
+    });
+    
+    if (!like) {
+      throw new NotFoundException(`Like with ID ${id} not found`);
+    }
+    
+    return like;
   }
 
-  update(id: number, updateLikeDto: UpdateLikeDto) {
-    return `This action updates a #${id} like`;
+  async remove(id: string, userId: string): Promise<void> {
+    const like = await this.reviewLikeRepository.findOne({
+      where: { id, user_id: userId },
+    });
+    
+    if (!like) {
+      throw new NotFoundException(`Like with ID ${id} not found or not owned by user`);
+    }
+    
+    await this.reviewLikeRepository.remove(like);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} like`;
+  async removeByReviewAndUser(reviewId: string, userId: string): Promise<void> {
+    const like = await this.reviewLikeRepository.findOne({
+      where: { review_id: reviewId, user_id: userId },
+    });
+    
+    if (!like) {
+      throw new NotFoundException('Like not found');
+    }
+    
+    await this.reviewLikeRepository.remove(like);
+  }
+
+  async getLikesByUser(userId: string): Promise<ReviewLike[]> {
+    return this.reviewLikeRepository.find({
+      where: { user_id: userId },
+      relations: ['review', 'review.book'],
+    });
+  }
+
+  async getLikesByReview(reviewId: string): Promise<ReviewLike[]> {
+    return this.reviewLikeRepository.find({
+      where: { review_id: reviewId },
+      relations: ['user'],
+    });
   }
 }
