@@ -1,16 +1,61 @@
-
 import { NestFactory } from '@nestjs/core';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppModule } from './app.module';
 import { BooksService } from './books/books.service';
 import { ClubService } from './club/club.service';
 import { UsersService } from './users/users.service';
+import { PersonalLibrary } from './personal-library/entities/personal-library.entity';
+import { Review } from './reviews/entities/review.entity';
+import { Membership } from './membership/entities/membership.entity';
+import { ReviewLike } from './likes/entities/like.entity';
+import { getConnection, Repository, createConnection } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
+import * as dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
 
 async function seedData() {
+  // First create the NestJS application context
   const app = await NestFactory.createApplicationContext(AppModule);
   
+  // Get services
   const booksService = app.get(BooksService);
   const clubService = app.get(ClubService);
   const usersService = app.get(UsersService);
+  const configService = app.get(ConfigService);
+  
+  // Get database connection
+  let connection;
+  try {
+    // Try to get existing connection first
+    connection = getConnection();
+  } catch (error) {
+    console.log('No existing connection found, creating a new one...');
+    try {
+      // If no connection exists, create a new one
+      connection = await createConnection({
+        type: 'postgres',
+        url: process.env.DATABASE_URL,
+        entities: [__dirname + '/**/*.entity{.ts,.js}'],
+        synchronize: true,
+        logging: true,
+      });
+      console.log('Database connection established successfully');
+    } catch (dbError) {
+      console.error('Failed to connect to the database:', dbError);
+      await app.close();
+      process.exit(1);
+    }
+  }
+  
+  // Initialize repositories
+  const reviewLikeRepository = connection.getRepository(ReviewLike);
+  const reviewRepository = connection.getRepository(Review);
+  const membershipRepository = connection.getRepository(Membership);
+  const personalLibraryRepository = connection.getRepository(PersonalLibrary);
+  
+  console.log('Repositories initialized successfully');
   
   const userId = '56963768-b972-41a7-8cf1-826544da7199';
   

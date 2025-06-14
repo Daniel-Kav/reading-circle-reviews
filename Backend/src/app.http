@@ -25,6 +25,6 @@ Content-Type: application/json
 
 ###
 
-GET {{baseUrl}}/users
+GET {{baseUrl}}/books
 Authorization: Bearer {{token}}
 

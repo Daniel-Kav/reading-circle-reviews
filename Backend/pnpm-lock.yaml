@@ -47,6 +47,9 @@ importers:
       class-validator:
         specifier: ^0.14.2
         version: 0.14.2
+      dotenv:
+        specifier: ^16.5.0
+        version: 16.5.0
       jsonwebtoken:
         specifier: ^9.0.2
         version: 9.0.2
@@ -5615,7 +5618,7 @@ snapshots:
 
   dotenv-expand@12.0.1:
     dependencies:
-      dotenv: 16.4.7
+      dotenv: 16.5.0
 
   dotenv@16.4.7: {}
 
