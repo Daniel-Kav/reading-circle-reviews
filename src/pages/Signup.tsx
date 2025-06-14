@@ -93,11 +93,8 @@ const Signup = () => {
     
     if (signUpError) {
       setError(signUpError);
-    } else {
-      navigate('/browse');
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
   if (loading) {
