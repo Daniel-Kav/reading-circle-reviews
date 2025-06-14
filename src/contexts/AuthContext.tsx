@@ -1,90 +1,103 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+
+interface User {
+  id: string;
+  email: string;
+  full_name: string;
+  role: string;
+  created_at?: string;
+  updated_at?: string;
+}
 
 interface AuthContextType {
   user: User | null;
-  session: Session | null;
+  token: string | null;
   loading: boolean;
   signUp: (email: string, password: string, firstName: string, lastName: string) => Promise<{ error?: string }>;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
-  syncUserWithBackend: (user: User) => Promise<void>;
+  getCurrentUser: () => Promise<User | null>;
 }
+
+const API_URL = 'http://localhost:3000';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
 
-  const syncUserWithBackend = async (authUser: User) => {
-    try {
-      const token = session?.access_token;
-      if (!token) return;
-
-      // Check if user exists in backend
-      const checkResponse = await fetch(`http://localhost:3000/users/${authUser.id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (checkResponse.status === 404) {
-        // User doesn't exist, create them
-        const userData = {
-          id: authUser.id,
-          full_name: authUser.user_metadata?.firstName && authUser.user_metadata?.lastName 
-            ? `${authUser.user_metadata.firstName} ${authUser.user_metadata.lastName}`
-            : authUser.email,
-          role: 'farmer'
-        };
-
-        await fetch('http://localhost:3000/users', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(userData),
-        });
-      }
-    } catch (error) {
-      console.error('Error syncing user with backend:', error);
+  // Function to store token and update auth state
+  const setAuthToken = (newToken: string | null) => {
+    if (newToken) {
+      localStorage.setItem('token', newToken);
+      setToken(newToken);
+    } else {
+      localStorage.removeItem('token');
+      setToken(null);
+      setUser(null);
     }
   };
 
+  // Get current user from token
+  const getCurrentUser = async (): Promise<User | null> => {
+    const storedToken = localStorage.getItem('token');
+    if (!storedToken) return null;
+
+    try {
+      const response = await fetch(`${API_URL}/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${storedToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch user');
+      }
+
+
+      const { user } = await response.json();
+      setUser(user);
+      return user;
+    } catch (error) {
+      console.error('Error fetching current user:', error);
+      setAuthToken(null);
+      return null;
+    }
+  };
+
+  // Sign up a new user
   const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
     try {
-      const redirectUrl = `${window.location.origin}/`;
-      
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            firstName,
-            lastName,
-          },
+      const response = await fetch(`${API_URL}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          email,
+          password,
+          firstName,
+          lastName,
+        }),
       });
 
-      if (error) {
-        return { error: error.message };
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Registration failed');
       }
 
-      if (data.user && data.session) {
-        await syncUserWithBackend(data.user);
-        toast.success('Account created successfully!');
-      } else {
-        toast.info('Please check your email to confirm your account.');
+      // Auto-login after successful registration
+      const loginResponse = await signIn(email, password);
+      if (loginResponse.error) {
+        return loginResponse;
       }
 
+      toast.success('Account created successfully!');
       return {};
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
@@ -92,22 +105,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Sign in an existing user
   const signIn = async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
       });
 
-      if (error) {
-        return { error: error.message };
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
       }
 
-      if (data.user && data.session) {
-        await syncUserWithBackend(data.user);
-        toast.success('Welcome back!');
-      }
-
+      // Store the token and update state
+      setAuthToken(data.token);
+      setUser(data.user);
+      
+      toast.success('Welcome back!');
       return {};
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
@@ -115,63 +134,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Sign out the current user
   const signOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        toast.error('Error signing out');
-        console.error('Sign out error:', error);
-      } else {
-        toast.success('Signed out successfully');
-      }
+      setAuthToken(null);
+      toast.success('Signed out successfully');
     } catch (error) {
-      toast.error('An unexpected error occurred');
       console.error('Sign out error:', error);
+      toast.error('An error occurred while signing out');
     }
   };
 
+  // Check for existing session on initial load
   useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.id);
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-
-        // Sync with backend when user signs in
-        if (session?.user && event === 'SIGNED_IN') {
-          setTimeout(() => {
-            syncUserWithBackend(session.user);
-          }, 0);
+    const checkAuth = async () => {
+      try {
+        const storedToken = localStorage.getItem('token');
+        if (storedToken) {
+          const user = await getCurrentUser();
+          if (!user) {
+            setAuthToken(null);
+          }
         }
+      } catch (error) {
+        console.error('Auth check error:', error);
+        setAuthToken(null);
+      } finally {
+        setLoading(false);
       }
-    );
+    };
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-
-      if (session?.user) {
-        setTimeout(() => {
-          syncUserWithBackend(session.user);
-        }, 0);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    checkAuth();
   }, []);
 
   const value = {
     user,
-    session,
+    token,
     loading,
     signUp,
     signIn,
     signOut,
-    syncUserWithBackend,
+    getCurrentUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
