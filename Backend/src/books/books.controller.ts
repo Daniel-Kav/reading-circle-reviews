@@ -3,6 +3,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ParseUUIDPipe
 import { BooksService } from './books.service';
 import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
+import { Public } from '../auth/decorators/public.decorator';
 
 @Controller('books')
 export class BooksController {
@@ -14,6 +15,7 @@ export class BooksController {
   }
 
   @Get()
+  @Public()
   findAll(@Query('search') search?: string) {
     if (search) {
       return this.booksService.searchBooks(search);
@@ -22,6 +24,7 @@ export class BooksController {
   }
 
   @Get(':id')
+  @Public()
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.booksService.findOne(id);
   }

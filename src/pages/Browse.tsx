@@ -1,10 +1,11 @@
+
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Search, Star, User, BookOpen } from "lucide-react";
-import { Link } from "react-router-dom";
+import Navbar from "@/components/Navbar";
 
 const Browse = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -23,15 +24,16 @@ const Browse = () => {
         if (searchTerm) {
           url += `?search=${encodeURIComponent(searchTerm)}`;
         }
-        const accessToken = localStorage.getItem('access_token');
+        const token = localStorage.getItem('token');
         const response = await fetch(url, {
-          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
         if (!response.ok) throw new Error("Failed to fetch books");
         const data = await response.json();
         setBooks(data);
       } catch (err) {
         setError((err as Error).message);
+        console.error('Error fetching books:', err);
       } finally {
         setLoading(false);
       }
@@ -42,35 +44,43 @@ const Browse = () => {
   const allTags = ["thriller", "psychology", "mystery", "self-help", "productivity", "habits", "fiction", "romance", "hollywood"];
 
   const filteredBooks = books.filter(book => {
-    const matchesSearch = book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         book.author.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesTag = !selectedTag || book.tags.includes(selectedTag);
-    const matchesRating = book.avgRating >= minRating;
+    const matchesSearch = book.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         book.author?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesTag = !selectedTag || book.tags?.includes(selectedTag);
+    const matchesRating = (book.avgRating || 0) >= minRating;
     
     return matchesSearch && matchesTag && matchesRating;
   });
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link to="/" className="flex items-center">
-              <BookOpen className="h-8 w-8 text-indigo-600" />
-              <h1 className="ml-2 text-2xl font-bold text-gray-900">BookClub</h1>
-            </Link>
-            <div className="flex space-x-4">
-              <Link to="/login">
-                <Button variant="outline">Login</Button>
-              </Link>
-              <Link to="/signup">
-                <Button>Sign Up</Button>
-              </Link>
-            </div>
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center">
+            <p>Loading books...</p>
           </div>
         </div>
-      </header>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center">
+            <p className="text-red-600">Error: {error}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
@@ -136,7 +146,7 @@ const Browse = () => {
               <CardHeader>
                 <div className="flex items-start space-x-4">
                   <img 
-                    src={book.coverUrl} 
+                    src={book.cover_image_url || book.coverUrl} 
                     alt={book.title}
                     className="w-20 h-28 object-cover rounded-md bg-gray-200"
                   />
@@ -150,20 +160,20 @@ const Browse = () => {
                         {[1, 2, 3, 4, 5].map((star) => (
                           <Star 
                             key={star} 
-                            className={`h-4 w-4 ${star <= book.avgRating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} 
+                            className={`h-4 w-4 ${star <= (book.avgRating || 0) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} 
                           />
                         ))}
                       </div>
                       <span className="text-sm text-gray-600">
-                        {book.avgRating.toFixed(1)} ({book.reviewCount} reviews)
+                        {(book.avgRating || 0).toFixed(1)} ({book.reviewCount || book.reviews?.length || 0} reviews)
                       </span>
                     </div>
 
                     {/* Tags */}
                     <div className="flex flex-wrap gap-1">
-                      {book.tags.map(tag => (
-                        <Badge key={tag} variant="secondary" className="text-xs">
-                          {tag}
+                      {(book.tags || []).map(tag => (
+                        <Badge key={tag.id || tag} variant="secondary" className="text-xs">
+                          {tag.name || tag}
                         </Badge>
                       ))}
                     </div>
@@ -174,11 +184,11 @@ const Browse = () => {
               <CardContent>
                 <div className="space-y-3">
                   <h4 className="font-medium text-gray-900">Recent Reviews</h4>
-                  {book.recentReviews.slice(0, 2).map((review, index) => (
-                    <div key={index} className="border-l-4 border-indigo-200 pl-4">
+                  {(book.reviews || book.recentReviews || []).slice(0, 2).map((review, index) => (
+                    <div key={review.id || index} className="border-l-4 border-indigo-200 pl-4">
                       <div className="flex items-center space-x-2 mb-1">
                         <User className="h-4 w-4 text-gray-400" />
-                        <span className="text-sm font-medium">{review.user}</span>
+                        <span className="text-sm font-medium">{review.user?.full_name || review.user}</span>
                         <div className="flex items-center">
                           {[1, 2, 3, 4, 5].map((star) => (
                             <Star 
@@ -188,7 +198,7 @@ const Browse = () => {
                           ))}
                         </div>
                       </div>
-                      <p className="text-sm text-gray-600">{review.text}</p>
+                      <p className="text-sm text-gray-600">{review.review_text || review.text}</p>
                     </div>
                   ))}
                   
@@ -201,7 +211,7 @@ const Browse = () => {
           ))}
         </div>
 
-        {filteredBooks.length === 0 && (
+        {filteredBooks.length === 0 && !loading && (
           <div className="text-center py-12">
             <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No books found</h3>
