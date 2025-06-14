@@ -28,17 +28,22 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    
+    if (!email || !password) {
+      setError("Please fill in all fields");
+      return;
+    }
+
     setIsLoading(true);
 
     const { error: signInError } = await signIn(email, password);
     
     if (signInError) {
       setError(signInError);
+      setIsLoading(false);
     } else {
       navigate('/browse');
     }
-    
-    setIsLoading(false);
   };
 
   if (loading) {
