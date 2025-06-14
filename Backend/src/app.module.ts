@@ -32,6 +32,7 @@ import { ReviewLike } from './likes/entities/like.entity';
 import { PersonalLibrary } from './personal-library/entities/personal-library.entity';
 import { Club } from './club/entities/club.entity';
 import { Membership } from './membership/entities/membership.entity';
+import { SeedModule } from './seed/seed.module';
 
 @Module({
   imports: [
@@ -79,7 +80,8 @@ import { Membership } from './membership/entities/membership.entity';
     LikesModule,
     PersonalLibraryModule,
     ClubModule,
-    MembershipModule
+    MembershipModule,
+    SeedModule
   ],
   controllers: [],
   providers: [
