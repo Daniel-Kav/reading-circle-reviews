@@ -1,7 +1,7 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Request } from 'express';
 import * as jwt from 'jsonwebtoken';
-import jwksClient from 'jwks-rsa';
+import * as jwksClient from 'jwks-rsa';
 
 const SUPABASE_JWKS_URL = 'https://jhesuwxjrmllftcptlnv.supabase.co/auth/v1/keys';
 
