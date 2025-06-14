@@ -1,5 +1,5 @@
-
-import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, BeforeInsert } from 'typeorm';
+import { v4 as uuidv4 } from 'uuid';
 import { Review } from '../../reviews/entities/review.entity';
 import { ReviewLike } from '../../likes/entities/like.entity';
 import { PersonalLibrary } from '../../personal-library/entities/personal-library.entity';
@@ -16,6 +16,19 @@ export enum UserRole {
 export class User {
   @PrimaryColumn('uuid')
   id: string;
+
+  @BeforeInsert()
+  generateUuid() {
+    if (!this.id) {
+      this.id = uuidv4();
+    }
+  }
+
+  @Column({ type: 'text', unique: true })
+  email: string;
+
+  @Column({ type: 'text' })
+  password: string;
 
   @Column({ type: 'text', nullable: true })
   full_name: string;
