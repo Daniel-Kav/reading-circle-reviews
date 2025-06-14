@@ -42,7 +42,7 @@ A modern web application for book lovers to discover, review, and discuss books 
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/reading-circle-reviews.git
+   git clone https://github.com/Daniel-kav/reading-circle-reviews.git
    cd reading-circle-reviews
    ```
 
